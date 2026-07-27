@@ -1,0 +1,44 @@
+name: TenderSignal monitor
+
+on:
+  schedule:
+    - cron: "17 */4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Load private subscriber profiles
+        env:
+          TENDERSIGNAL_SUBSCRIBERS_JSON: ${{ secrets.TENDERSIGNAL_SUBSCRIBERS_JSON }}
+        run: |
+          test -n "$TENDERSIGNAL_SUBSCRIBERS_JSON" || { echo "Missing TENDERSIGNAL_SUBSCRIBERS_JSON secret"; exit 1; }
+          mkdir -p config
+          printf '%s' "$TENDERSIGNAL_SUBSCRIBERS_JSON" > config/subscribers.json
+      - name: Run monitor
+        env:
+          TENDERSIGNAL_SMTP_HOST: ${{ secrets.TENDERSIGNAL_SMTP_HOST }}
+          TENDERSIGNAL_SMTP_PORT: ${{ secrets.TENDERSIGNAL_SMTP_PORT }}
+          TENDERSIGNAL_SMTP_USER: ${{ secrets.TENDERSIGNAL_SMTP_USER }}
+          TENDERSIGNAL_SMTP_PASSWORD: ${{ secrets.TENDERSIGNAL_SMTP_PASSWORD }}
+          TENDERSIGNAL_SMTP_FROM: ${{ secrets.TENDERSIGNAL_SMTP_FROM }}
+          TENDERSIGNAL_UNSUBSCRIBE_ADDRESS: ${{ secrets.TENDERSIGNAL_UNSUBSCRIBE_ADDRESS }}
+        run: python worker/tender_signal.py
+      - name: Preserve delivery de-duplication state
+        run: |
+          git config user.name "tendersignal-bot"
+          git config user.email "tendersignal-bot@users.noreply.github.com"
+          # The database is intentionally gitignored locally because it can hold
+          # customer delivery history; the workflow force-adds only this state
+          # file so scheduled runs do not re-send the same alert.
+          git add -f data/tender_signal.sqlite3
+          git diff --cached --quiet || git commit -m "chore: update tender delivery state"
+          git push
