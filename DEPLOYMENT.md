@@ -34,7 +34,7 @@ These steps require your personal accounts, so they cannot be completed safely w
 
 ## Before taking money
 
-- Replace `hello@yourdomain.example` in `site/index.html` and the bracketed contact placeholders in the legal pages with real business contacts.
+- The dedicated TenderSignal Gmail mailbox is wired into the public contact, privacy, support and unsubscribe links. Replace the remaining bracketed legal-identity placeholders before accepting customers.
 - Add your legal business details to the privacy notice, terms and cancellation policy already prepared in `site/`, then obtain legal review before launch.
 - Add a Stripe Payment Link only after these policies are reviewed for your business and location.
 - Do not use this tool for unsolicited bulk email. Customer operational alerts should only go to subscribers who asked for them. When someone requests removal, change their profile `status` to `inactive` in the subscriber-secret JSON before the next scheduled run.
