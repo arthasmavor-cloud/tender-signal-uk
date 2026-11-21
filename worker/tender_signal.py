@@ -112,6 +112,15 @@ def send_email(recipient: str, subject: str, html: str) -> None:
 
 
 def main() -> int:
+    if os.getenv("TENDERSIGNAL_SMOKE_TEST", "").lower() == "true":
+        recipient = os.environ["TENDERSIGNAL_SMTP_FROM"]
+        send_email(
+            recipient,
+            "TenderSignal delivery test",
+            "<h2>TenderSignal is connected</h2><p>This is a manual delivery test. No customer notice was sent.</p>",
+        )
+        print(f"Sent delivery test to {recipient}")
+        return 0
     subscribers = load_subscribers()
     notices = fetch_notices()
     DB_PATH.parent.mkdir(exist_ok=True)

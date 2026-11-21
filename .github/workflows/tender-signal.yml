@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: "17 */4 * * *"
   workflow_dispatch:
+    inputs:
+      smoke_test:
+        description: "Send a delivery test to the configured sender address"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -31,6 +37,7 @@ jobs:
           TENDERSIGNAL_SMTP_PASSWORD: ${{ secrets.TENDERSIGNAL_SMTP_PASSWORD }}
           TENDERSIGNAL_SMTP_FROM: ${{ secrets.TENDERSIGNAL_SMTP_FROM }}
           TENDERSIGNAL_UNSUBSCRIBE_ADDRESS: ${{ secrets.TENDERSIGNAL_UNSUBSCRIBE_ADDRESS }}
+          TENDERSIGNAL_SMOKE_TEST: ${{ inputs.smoke_test && 'true' || 'false' }}
         run: python worker/tender_signal.py
       - name: Preserve delivery de-duplication state
         run: |
