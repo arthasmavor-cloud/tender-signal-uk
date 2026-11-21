@@ -32,7 +32,11 @@ def load_subscribers() -> list[dict]:
 
 
 def fetch_notices() -> list[dict]:
-    updated_from = (datetime.now(timezone.utc) - timedelta(hours=6)).replace(microsecond=0)
+    # A 24-hour overlap protects against a delayed or failed scheduled run.
+    # SQLite delivery de-duplication prevents an already-sent notice from being
+    # repeated when the overlap includes it again.
+    lookback_hours = int(os.getenv("TENDERSIGNAL_LOOKBACK_HOURS", "24"))
+    updated_from = (datetime.now(timezone.utc) - timedelta(hours=lookback_hours)).replace(microsecond=0)
     params = {"limit": "100", "stages": "tender", "updatedFrom": updated_from.isoformat()}
     request = Request(f"{API_URL}?{urlencode(params)}", headers={"Accept": "application/json"})
     with urlopen(request, timeout=30) as response:
