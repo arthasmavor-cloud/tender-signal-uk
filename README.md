@@ -46,15 +46,17 @@ GitHub Actions also needs the same values as repository secrets. Do not commit `
 | --- | --- | --- |
 | 1–3 | Working demo and offer | Configure one niche (e.g. cyber-security consultancies), landing page, email sender, and 3 sample alert briefs. |
 | 4–7 | 20 discovery conversations | Build a list of 100 UK firms with 5–50 people; send tailored messages asking whether missed tenders cost them deals. Do not bulk spam. |
-| 8–14 | First 3 paid founders | Offer a 14-day paid pilot at £99/month; personally verify every alert while the scoring rules learn. |
+| 8–14 | First 3 paid founders | Offer a 14-day paid pilot at £4.90/month; use their actual service keywords to prove alert relevance. |
 | 15–21 | Repeatable acquisition | Publish two useful tender-analysis posts and add referral/partner outreach to bid writers and trade associations. |
-| 22–30 | 10 paid customers / evidence | Add Stripe checkout, cancellation policy, privacy policy, and testimonials only from real customers. Raise to £199/month once the alert quality is proven. |
+| 22–30 | 10 paid customers / evidence | Add Stripe checkout, cancellation policy, privacy policy, and testimonials only from real customers. Improve conversion and retention before changing price. |
 
 ## Business model
 
-- Founding tier: £99/month for one profile, daily digest, and human quality check.
-- Standard tier: £199/month for up to three profiles, immediate high-score alerts, and bid/no-bid summaries.
-- Agency tier: £499/month for 10 profiles and white-label delivery.
+- Founding tier: £4.90/month for one tailored profile and daily digest.
+- Standard tier: £10.90/month for up to three tailored profiles.
+- Agency tier: £19.90/month for up to ten separate customer or business-unit profiles.
+
+At these low prices, the product must be largely self-service. The all-category scan is the shared data source; every paying customer receives a profile that can include any industry keywords, optional location preferences, and exclusions.
 
 Do not claim that the service guarantees contracts. It identifies opportunities; the customer remains responsible for eligibility and submissions.
 
