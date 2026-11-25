@@ -12,11 +12,13 @@ import smtplib
 import sqlite3
 import ssl
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from html import escape
 from pathlib import Path
 from urllib.parse import urlencode
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,9 +41,21 @@ def fetch_notices() -> list[dict]:
     updated_from = (datetime.now(timezone.utc) - timedelta(hours=lookback_hours)).replace(microsecond=0)
     params = {"limit": "100", "stages": "tender", "updatedFrom": updated_from.isoformat()}
     request = Request(f"{API_URL}?{urlencode(params)}", headers={"Accept": "application/json"})
-    with urlopen(request, timeout=30) as response:
-        package = json.load(response)
-    return package.get("releases", [])
+    last_error: Exception | None = None
+    for attempt in range(1, 4):
+        try:
+            with urlopen(request, timeout=30) as response:
+                package = json.load(response)
+            notices = package.get("releases", [])
+            print(f"Fetched {len(notices)} tender notices (attempt {attempt}/3)")
+            return notices
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as error:
+            last_error = error
+            if attempt < 3:
+                wait_seconds = attempt * 3
+                print(f"Tender source attempt {attempt}/3 failed: {error}. Retrying in {wait_seconds}s.")
+                time.sleep(wait_seconds)
+    raise RuntimeError(f"Tender source failed after 3 attempts: {last_error}")
 
 
 def text_for(release: dict) -> str:
@@ -130,6 +144,8 @@ def main() -> int:
     DB_PATH.parent.mkdir(exist_ok=True)
     with sqlite3.connect(DB_PATH) as connection:
         connection.execute("CREATE TABLE IF NOT EXISTS deliveries (subscriber_id TEXT, notice_id TEXT, sent_at TEXT, UNIQUE(subscriber_id, notice_id))")
+        total_matches = 0
+        total_sent = 0
         for subscriber in subscribers:
             if subscriber.get("status", "active") != "active":
                 continue
@@ -140,6 +156,7 @@ def main() -> int:
                 relevance, reasons = score(notice, subscriber)
                 if relevance < subscriber.get("minimum_score", 7):
                     continue
+                total_matches += 1
                 title = notice.get("tender", {}).get("title") or notice.get("title") or "Untitled procurement notice"
                 reason_text = ", ".join(reasons) or "profile match"
                 html = f"""<h2>TenderSignal: {escape(title)}</h2>
@@ -149,7 +166,9 @@ def main() -> int:
 <p><small>You received this because your company profile is active. To stop alerts, reply with the word UNSUBSCRIBE.</small></p>"""
                 send_email(subscriber["email"], f"TenderSignal match ({relevance}/10): {title}", html)
                 mark_sent(connection, subscriber["id"], notice_id)
+                total_sent += 1
                 print(f"Sent {notice_id} to {subscriber['email']}")
+        print(f"Monitor summary: {total_matches} eligible matches, {total_sent} alerts sent.")
     return 0
 
 
