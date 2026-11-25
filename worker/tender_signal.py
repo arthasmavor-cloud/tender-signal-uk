@@ -70,6 +70,8 @@ def text_for(release: dict) -> str:
 
 
 def score(release: dict, subscriber: dict) -> tuple[int, list[str]]:
+    if subscriber.get("match_all", False):
+        return 10, ["all tender categories"]
     haystack = text_for(release)
     score_value = 0
     reasons: list[str] = []
@@ -110,6 +112,39 @@ def mark_sent(connection: sqlite3.Connection, subscriber_id: str, notice_id: str
     connection.commit()
 
 
+def digest_sent_today(connection: sqlite3.Connection, subscriber_id: str) -> bool:
+    digest_date = datetime.now(timezone.utc).date().isoformat()
+    return connection.execute(
+        "SELECT 1 FROM digests WHERE subscriber_id = ? AND digest_date = ?", (subscriber_id, digest_date)
+    ).fetchone() is not None
+
+
+def mark_digest_sent(connection: sqlite3.Connection, subscriber_id: str) -> None:
+    digest_date = datetime.now(timezone.utc).date().isoformat()
+    connection.execute(
+        "INSERT OR IGNORE INTO digests(subscriber_id, digest_date, sent_at) VALUES (?, ?, ?)",
+        (subscriber_id, digest_date, datetime.now(timezone.utc).isoformat()),
+    )
+    connection.commit()
+
+
+def digest_html(notices: list[tuple[dict, int, list[str]]]) -> str:
+    items = []
+    for notice, relevance, reasons in notices:
+        title = notice.get("tender", {}).get("title") or notice.get("title") or "Untitled procurement notice"
+        description = notice.get("tender", {}).get("description", "")[:420]
+        items.append(
+            f"<li><a href=\"{escape(source_link(notice), quote=True)}\">{escape(title)}</a> "
+            f"<small>({relevance}/10 · {escape(', '.join(reasons))})</small><br>{escape(description)}</li>"
+        )
+    return "".join([
+        f"<h2>TenderSignal daily digest: {len(notices)} new opportunities</h2>",
+        "<p>All new open tender notices matching your active all-category profile.</p><ol>",
+        "".join(items),
+        "</ol><p><small>To stop alerts, reply with the word UNSUBSCRIBE.</small></p>",
+    ])
+
+
 def send_email(recipient: str, subject: str, html: str) -> None:
     required = ["TENDERSIGNAL_SMTP_HOST", "TENDERSIGNAL_SMTP_USER", "TENDERSIGNAL_SMTP_PASSWORD", "TENDERSIGNAL_SMTP_FROM"]
     missing = [name for name in required if not os.getenv(name)]
@@ -144,11 +179,13 @@ def main() -> int:
     DB_PATH.parent.mkdir(exist_ok=True)
     with sqlite3.connect(DB_PATH) as connection:
         connection.execute("CREATE TABLE IF NOT EXISTS deliveries (subscriber_id TEXT, notice_id TEXT, sent_at TEXT, UNIQUE(subscriber_id, notice_id))")
+        connection.execute("CREATE TABLE IF NOT EXISTS digests (subscriber_id TEXT, digest_date TEXT, sent_at TEXT, UNIQUE(subscriber_id, digest_date))")
         total_matches = 0
         total_sent = 0
         for subscriber in subscribers:
             if subscriber.get("status", "active") != "active":
                 continue
+            digest_candidates: list[tuple[dict, int, list[str]]] = []
             for notice in notices:
                 notice_id = notice.get("id") or notice.get("ocid")
                 if not notice_id or already_sent(connection, subscriber["id"], notice_id):
@@ -157,6 +194,9 @@ def main() -> int:
                 if relevance < subscriber.get("minimum_score", 7):
                     continue
                 total_matches += 1
+                if subscriber.get("delivery_mode") == "daily_digest":
+                    digest_candidates.append((notice, relevance, reasons))
+                    continue
                 title = notice.get("tender", {}).get("title") or notice.get("title") or "Untitled procurement notice"
                 reason_text = ", ".join(reasons) or "profile match"
                 html = f"""<h2>TenderSignal: {escape(title)}</h2>
@@ -168,6 +208,17 @@ def main() -> int:
                 mark_sent(connection, subscriber["id"], notice_id)
                 total_sent += 1
                 print(f"Sent {notice_id} to {subscriber['email']}")
+            if digest_candidates and not digest_sent_today(connection, subscriber["id"]):
+                send_email(
+                    subscriber["email"],
+                    f"TenderSignal daily digest: {len(digest_candidates)} opportunities",
+                    digest_html(digest_candidates),
+                )
+                for notice, _, _ in digest_candidates:
+                    mark_sent(connection, subscriber["id"], notice.get("id") or notice.get("ocid"))
+                mark_digest_sent(connection, subscriber["id"])
+                total_sent += 1
+                print(f"Sent daily digest with {len(digest_candidates)} notices to {subscriber['email']}")
         print(f"Monitor summary: {total_matches} eligible matches, {total_sent} alerts sent.")
     return 0
 

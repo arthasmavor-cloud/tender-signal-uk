@@ -3,10 +3,12 @@
     "id": "demo-cyber-consultancy",
     "email": "founder@example.com",
     "company_name": "Example Cyber Ltd",
-    "include_terms": ["cyber security", "penetration testing", "information security", "SOC"],
-    "exclude_terms": ["construction", "catering", "cleaning"],
-    "regions": ["London", "South East", "United Kingdom"],
-    "minimum_score": 7,
+    "match_all": true,
+    "delivery_mode": "daily_digest",
+    "include_terms": [],
+    "exclude_terms": [],
+    "regions": [],
+    "minimum_score": 0,
     "status": "active"
   }
 ]

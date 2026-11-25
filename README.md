@@ -1,6 +1,6 @@
 # TenderSignal UK
 
-TenderSignal UK is a narrow B2B lead-intelligence service for small UK IT consultancies and specialist subcontractors. It monitors public procurement notices, scores opportunities against client profiles, and emails only the most relevant opportunities.
+TenderSignal UK is a B2B tender-intelligence service. It monitors public procurement notices, scores opportunities against client profiles, and can email either high-relevance alerts or a daily all-category digest.
 
 ## Why this is the 30-day bet
 
@@ -67,6 +67,10 @@ Find a Tender OCDS API -> filter + score -> SQLite de-duplication -> HTML email 
 ```
 
 `worker/tender_signal.py` accepts only public notice metadata and sends an email once for each notice/subscriber pair. The default schedule checks every four hours.
+
+### All-category digest profile
+
+Use `"match_all": true`, `"delivery_mode": "daily_digest"`, and `"minimum_score": 0` in a subscriber profile to receive all new tender-stage notices as one digest each day. This avoids sending one email per notice while keeping categories and regions unrestricted.
 
 ## Before public launch
 
