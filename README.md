@@ -46,17 +46,16 @@ GitHub Actions also needs the same values as repository secrets. Do not commit `
 | --- | --- | --- |
 | 1–3 | Working demo and offer | Configure one niche (e.g. cyber-security consultancies), landing page, email sender, and 3 sample alert briefs. |
 | 4–7 | 20 discovery conversations | Build a list of 100 UK firms with 5–50 people; send tailored messages asking whether missed tenders cost them deals. Do not bulk spam. |
-| 8–14 | First 3 paid founders | Offer a 14-day paid pilot at £4.90/month; use their actual service keywords to prove alert relevance. |
+| 8–14 | First 3 paid founders | Offer a 14-day paid pilot at £4.99/month; use their actual service keywords to prove alert relevance. |
 | 15–21 | Repeatable acquisition | Publish two useful tender-analysis posts and add referral/partner outreach to bid writers and trade associations. |
 | 22–30 | 10 paid customers / evidence | Add Stripe checkout, cancellation policy, privacy policy, and testimonials only from real customers. Improve conversion and retention before changing price. |
 
 ## Business model
 
-- Founding tier: £4.90/month for one tailored profile and daily digest.
-- Standard tier: £10.90/month for up to three tailored profiles.
-- Agency tier: £19.90/month for up to ten separate customer or business-unit profiles.
+- All-inclusive founder plan: £4.99/month for one recipient and a daily digest.
+- Every category and UK region is included by default; customers may request any number of service-keyword, location or exclusion changes.
 
-At these low prices, the product must be largely self-service. The all-category scan is the shared data source; every paying customer receives a profile that can include any industry keywords, optional location preferences, and exclusions.
+At this low price, the product must be largely automated. The all-category scan is the shared data source; every customer can later tailor what appears in their digest without changing plan.
 
 Do not claim that the service guarantees contracts. It identifies opportunities; the customer remains responsible for eligibility and submissions.
 

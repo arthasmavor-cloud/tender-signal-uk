@@ -33,22 +33,13 @@ def load_subscribers() -> list[dict]:
     return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
 
 
-def fetch_notices() -> list[dict]:
-    # A 24-hour overlap protects against a delayed or failed scheduled run.
-    # SQLite delivery de-duplication prevents an already-sent notice from being
-    # repeated when the overlap includes it again.
-    lookback_hours = int(os.getenv("TENDERSIGNAL_LOOKBACK_HOURS", "24"))
-    updated_from = (datetime.now(timezone.utc) - timedelta(hours=lookback_hours)).replace(microsecond=0)
-    params = {"limit": "100", "stages": "tender", "updatedFrom": updated_from.isoformat()}
-    request = Request(f"{API_URL}?{urlencode(params)}", headers={"Accept": "application/json"})
+def fetch_package(url: str) -> dict:
+    request = Request(url, headers={"Accept": "application/json"})
     last_error: Exception | None = None
     for attempt in range(1, 4):
         try:
             with urlopen(request, timeout=30) as response:
-                package = json.load(response)
-            notices = package.get("releases", [])
-            print(f"Fetched {len(notices)} tender notices (attempt {attempt}/3)")
-            return notices
+                return json.load(response)
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as error:
             last_error = error
             if attempt < 3:
@@ -56,6 +47,31 @@ def fetch_notices() -> list[dict]:
                 print(f"Tender source attempt {attempt}/3 failed: {error}. Retrying in {wait_seconds}s.")
                 time.sleep(wait_seconds)
     raise RuntimeError(f"Tender source failed after 3 attempts: {last_error}")
+
+
+def fetch_notices() -> list[dict]:
+    # A 24-hour overlap protects against a delayed or failed scheduled run.
+    # SQLite delivery de-duplication prevents an already-sent notice from being
+    # repeated when the overlap includes it again.
+    lookback_hours = int(os.getenv("TENDERSIGNAL_LOOKBACK_HOURS", "24"))
+    updated_to = datetime.now(timezone.utc).replace(microsecond=0)
+    updated_from = updated_to - timedelta(hours=lookback_hours)
+    params = {
+        "limit": "100",
+        "stages": "tender",
+        "updatedFrom": updated_from.isoformat(),
+        "updatedTo": updated_to.isoformat(),
+    }
+    next_url: str | None = f"{API_URL}?{urlencode(params)}"
+    visited_urls: set[str] = set()
+    notices: list[dict] = []
+    while next_url and next_url not in visited_urls:
+        visited_urls.add(next_url)
+        package = fetch_package(next_url)
+        notices.extend(package.get("releases", []))
+        next_url = package.get("links", {}).get("next")
+    print(f"Fetched {len(notices)} tender notices across {len(visited_urls)} page(s)")
+    return notices
 
 
 def text_for(release: dict) -> str:
@@ -97,6 +113,59 @@ def source_link(release: dict) -> str:
     return f"https://www.find-tender.service.gov.uk/Notice/{notice_id}" if notice_id else "https://www.find-tender.service.gov.uk/"
 
 
+def format_deadline(release: dict) -> str:
+    value = release.get("tender", {}).get("tenderPeriod", {}).get("endDate")
+    if not value:
+        return "Not stated"
+    try:
+        deadline = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return f"{deadline.day} {deadline.strftime('%b %Y, %H:%M UTC')}"
+    except ValueError:
+        return str(value)
+
+
+def format_value(release: dict) -> str:
+    value = release.get("tender", {}).get("value", {})
+    amount, currency = value.get("amount"), value.get("currency", "GBP")
+    if amount is None:
+        return "Not stated"
+    symbol = "£" if currency == "GBP" else f"{currency} "
+    try:
+        return f"{symbol}{float(amount):,.0f}"
+    except (TypeError, ValueError):
+        return f"{symbol}{amount}"
+
+
+def format_location(release: dict) -> str:
+    tender = release.get("tender", {})
+    values: list[object] = [tender.get("deliveryLocation"), tender.get("deliveryLocations"), tender.get("deliveryAddresses")]
+    values.extend(item.get("deliveryAddresses") for item in tender.get("items", []) if isinstance(item, dict))
+    labels: list[str] = []
+
+    def collect(value: object) -> None:
+        if isinstance(value, str) and value.strip():
+            labels.append(value.strip())
+        elif isinstance(value, dict):
+            for key in ("region", "countryName", "locality", "name", "description"):
+                if isinstance(value.get(key), str):
+                    labels.append(value[key].strip())
+            for child in value.values():
+                if isinstance(child, (dict, list)):
+                    collect(child)
+        elif isinstance(value, list):
+            for child in value:
+                collect(child)
+
+    for value in values:
+        collect(value)
+    unique = list(dict.fromkeys(label for label in labels if label))
+    return ", ".join(unique[:4]) if unique else "UK location not stated"
+
+
+def buyer_name(release: dict) -> str:
+    return release.get("buyer", {}).get("name") or "Buyer not stated"
+
+
 def already_sent(connection: sqlite3.Connection, subscriber_id: str, notice_id: str) -> bool:
     row = connection.execute(
         "SELECT 1 FROM deliveries WHERE subscriber_id = ? AND notice_id = ?", (subscriber_id, notice_id)
@@ -135,7 +204,11 @@ def digest_html(notices: list[tuple[dict, int, list[str]]]) -> str:
         description = notice.get("tender", {}).get("description", "")[:420]
         items.append(
             f"<li><a href=\"{escape(source_link(notice), quote=True)}\">{escape(title)}</a> "
-            f"<small>({relevance}/10 · {escape(', '.join(reasons))})</small><br>{escape(description)}</li>"
+            f"<small>({relevance}/10 · {escape(', '.join(reasons))})</small><br>"
+            f"<strong>Buyer:</strong> {escape(buyer_name(notice))} &middot; "
+            f"<strong>Deadline:</strong> {escape(format_deadline(notice))} &middot; "
+            f"<strong>Value:</strong> {escape(format_value(notice))} &middot; "
+            f"<strong>Location:</strong> {escape(format_location(notice))}<br>{escape(description)}</li>"
         )
     return "".join([
         f"<h2>TenderSignal daily digest: {len(notices)} new opportunities</h2>",
