@@ -2,7 +2,8 @@ name: TenderSignal monitor
 
 on:
   schedule:
-    - cron: "17 */4 * * *"
+    # Daily founder-plan digest. GitHub Actions schedules are UTC.
+    - cron: "15 8 * * *"
   workflow_dispatch:
     inputs:
       smoke_test:

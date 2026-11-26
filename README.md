@@ -67,7 +67,7 @@ Find a Tender OCDS API -> filter + score -> SQLite de-duplication -> HTML email 
                               client profile rules
 ```
 
-`worker/tender_signal.py` accepts only public notice metadata and sends an email once for each notice/subscriber pair. The default schedule checks every four hours.
+`worker/tender_signal.py` accepts only public notice metadata and sends an email once for each notice/subscriber pair. The founder plan runs one daily morning digest (08:15 UTC); it does not send a separate email for every new notice.
 
 ### All-category digest profile
 
