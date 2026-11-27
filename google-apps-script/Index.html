@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Start CivicBid access</title>
+  <style>
+    :root{--ink:#102a43;--muted:#52616b;--accent:#0b7285;--pale:#e6fcf5}*{box-sizing:border-box}body{margin:0;background:#f8fafc;color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:760px;margin:0 auto;padding:44px 20px}h1{font-size:clamp(2rem,5vw,3.4rem);line-height:1.05;margin:.25rem 0 1rem}.eyebrow{color:var(--accent);font-weight:800;letter-spacing:.05em;text-transform:uppercase;font-size:.8rem}.lead{color:var(--muted);font-size:1.15rem}.card{background:#fff;border-radius:18px;padding:28px;box-shadow:0 18px 48px rgba(16,42,67,.12);margin-top:26px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.full{grid-column:1/-1}label{display:block;font-weight:700;margin:0 0 6px}input,textarea{font:inherit;width:100%;border:1px solid #b9c6d1;border-radius:8px;padding:11px}textarea{min-height:88px;resize:vertical}.hint{font-size:.86rem;color:var(--muted);margin:.25rem 0 0}.consent{display:flex;gap:10px;align-items:flex-start;margin:20px 0}.consent input{width:auto;margin-top:5px}button{appearance:none;border:0;border-radius:8px;background:var(--accent);color:#fff;font:700 1rem inherit;padding:13px 18px;cursor:pointer}button:disabled{opacity:.55;cursor:wait}#message{margin-top:18px;padding:12px;border-radius:8px;display:none}#message.error{display:block;background:#ffe3e3;color:#8a1c1c}#message.info{display:block;background:var(--pale)}small{color:var(--muted)}@media(max-width:600px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <p class="eyebrow">CivicBid founder access</p>
+    <h1>Set up your daily UK tender digest.</h1>
+    <p class="lead">£4.99/month for one recipient. Start broad across UK public-procurement notices, then tailor the profile whenever you need.</p>
+    <form id="application" class="card">
+      <div class="grid">
+        <div><label for="company">Business name</label><input id="company" name="company" required autocomplete="organization"></div>
+        <div><label for="contactName">Your name</label><input id="contactName" name="contactName" required autocomplete="name"></div>
+        <div><label for="email">Work email</label><input id="email" name="email" type="email" required autocomplete="email"></div>
+        <div><label for="phone">Mobile number</label><input id="phone" name="phone" required placeholder="+44 … or +91 …" autocomplete="tel"><p class="hint">Required by Razorpay for the subscription link.</p></div>
+        <div class="full"><label for="website">Website <small>(optional)</small></label><input id="website" name="website" type="url" placeholder="https://example.com"></div>
+        <div class="full"><label for="includeTerms">Services or keywords <small>(optional)</small></label><textarea id="includeTerms" name="includeTerms" placeholder="Leave blank to receive every category. Separate terms with commas."></textarea></div>
+        <div><label for="regions">Regions <small>(optional)</small></label><input id="regions" name="regions" placeholder="Leave blank for all UK regions"></div>
+        <div><label for="exclusions">Exclude <small>(optional)</small></label><input id="exclusions" name="exclusions" placeholder="Optional exclusions, comma-separated"></div>
+      </div>
+      <label class="consent"><input name="consent" type="checkbox" required><span>I am requesting a business subscription and agree that CivicBid may use these details to create my profile and send service communications. I have read the Privacy and Terms notices.</span></label>
+      <button id="submit" type="submit">Continue to secure payment</button>
+      <p><small>Payments are processed by Razorpay. CivicBid does not store card details. Your profile is activated only after Razorpay confirms the subscription.</small></p>
+      <div id="message" role="status"></div>
+    </form>
+  </main>
+  <script>
+    const form=document.getElementById('application'),button=document.getElementById('submit'),message=document.getElementById('message');
+    form.addEventListener('submit',event=>{event.preventDefault();button.disabled=true;message.className='info';message.textContent='Creating secure checkout…';message.style.display='block';const data=Object.fromEntries(new FormData(form).entries());data.consent=Boolean(data.consent);google.script.run.withSuccessHandler(result=>{if(result&&result.ok&&result.checkoutUrl){window.top.location.assign(result.checkoutUrl);return}button.disabled=false;message.className='info';message.textContent=(result&&result.message)||'Your request was saved.'}).withFailureHandler(()=>{button.disabled=false;message.className='error';message.textContent='We could not submit your request. Please try again later.'}).submitApplication(data);});
+  </script>
+</body>
+</html>

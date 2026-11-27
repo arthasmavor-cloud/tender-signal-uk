@@ -17,7 +17,7 @@ from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from html import escape
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -28,6 +28,20 @@ API_URL = "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages"
 
 
 def load_subscribers() -> list[dict]:
+    endpoint = os.getenv("TENDERSIGNAL_SUBSCRIBERS_ENDPOINT", "").strip()
+    if endpoint:
+        token = os.getenv("TENDERSIGNAL_SUBSCRIBERS_TOKEN", "").strip()
+        if not token:
+            raise SystemExit("Missing TENDERSIGNAL_SUBSCRIBERS_TOKEN for the subscriber endpoint.")
+        separator = "&" if "?" in endpoint else "?"
+        source = f"{endpoint}{separator}mode=subscribers&token={quote(token, safe='')}"
+        try:
+            payload = fetch_package(source)
+        except RuntimeError as error:
+            raise SystemExit(f"Could not load active subscribers: {error}") from error
+        if not isinstance(payload, list):
+            raise SystemExit("Subscriber endpoint did not return a list of active profiles.")
+        return payload
     if not CONFIG_PATH.exists():
         raise SystemExit(f"Missing {CONFIG_PATH}. Copy subscribers.example.json first.")
     return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
