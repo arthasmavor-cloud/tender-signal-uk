@@ -13,7 +13,7 @@
   <main class="wrap">
     <p class="eyebrow">CivicBid founder access</p>
     <h1>Set up your daily UK tender digest.</h1>
-    <p class="lead">£4.99/month for one recipient. Start broad across UK public-procurement notices, then tailor the profile whenever you need.</p>
+    <p class="lead">Founder access is £4.99/month for one recipient. Join the waitlist now; secure checkout will open after payment verification is complete.</p>
     <form id="application" class="card">
       <div class="grid">
         <div><label for="company">Business name</label><input id="company" name="company" required autocomplete="organization"></div>
@@ -26,14 +26,14 @@
         <div><label for="exclusions">Exclude <small>(optional)</small></label><input id="exclusions" name="exclusions" placeholder="Optional exclusions, comma-separated"></div>
       </div>
       <label class="consent"><input name="consent" type="checkbox" required><span>I am requesting a business subscription and agree that CivicBid may use these details to create my profile and send service communications. I have read the Privacy and Terms notices.</span></label>
-      <button id="submit" type="submit">Continue to secure payment</button>
-      <p><small>Payments are processed by Razorpay. CivicBid does not store card details. Your profile is activated only after Razorpay confirms the subscription.</small></p>
+      <button id="submit" type="submit">Join the founder waitlist</button>
+      <p><small>We will only collect payment through Razorpay once checkout is enabled. CivicBid does not store card details. Your profile is activated only after Razorpay confirms the subscription.</small></p>
       <div id="message" role="status"></div>
     </form>
   </main>
   <script>
     const form=document.getElementById('application'),button=document.getElementById('submit'),message=document.getElementById('message');
-    form.addEventListener('submit',event=>{event.preventDefault();button.disabled=true;message.className='info';message.textContent='Creating secure checkout…';message.style.display='block';const data=Object.fromEntries(new FormData(form).entries());data.consent=Boolean(data.consent);google.script.run.withSuccessHandler(result=>{if(result&&result.ok&&result.checkoutUrl){window.top.location.assign(result.checkoutUrl);return}button.disabled=false;message.className='info';message.textContent=(result&&result.message)||'Your request was saved.'}).withFailureHandler(()=>{button.disabled=false;message.className='error';message.textContent='We could not submit your request. Please try again later.'}).submitApplication(data);});
+    form.addEventListener('submit',event=>{event.preventDefault();button.disabled=true;message.className='info';message.textContent='Saving your request…';message.style.display='block';const data=Object.fromEntries(new FormData(form).entries());data.consent=Boolean(data.consent);google.script.run.withSuccessHandler(result=>{if(result&&result.ok&&result.checkoutUrl){window.top.location.assign(result.checkoutUrl);return}button.disabled=false;message.className='info';message.textContent=(result&&result.message)||'Your request was saved.'}).withFailureHandler(()=>{button.disabled=false;message.className='error';message.textContent='We could not submit your request. Please try again later.'}).submitApplication(data);});
   </script>
 </body>
 </html>
