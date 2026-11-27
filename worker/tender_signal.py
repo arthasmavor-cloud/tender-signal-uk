@@ -211,7 +211,7 @@ def digest_html(notices: list[tuple[dict, int, list[str]]]) -> str:
             f"<strong>Location:</strong> {escape(format_location(notice))}<br>{escape(description)}</li>"
         )
     return "".join([
-        f"<h2>TenderSignal daily digest: {len(notices)} new opportunities</h2>",
+        f"<h2>CivicBid daily digest: {len(notices)} new opportunities</h2>",
         "<p>All new open tender notices matching your active all-category profile.</p><ol>",
         "".join(items),
         "</ol><p><small>To stop alerts, reply with the word UNSUBSCRIBE.</small></p>",
@@ -229,7 +229,7 @@ def send_email(recipient: str, subject: str, html: str) -> None:
     message["Subject"] = subject
     unsubscribe_address = os.getenv("TENDERSIGNAL_UNSUBSCRIBE_ADDRESS") or os.environ["TENDERSIGNAL_SMTP_FROM"]
     message["List-Unsubscribe"] = f"<mailto:{unsubscribe_address}?subject=UNSUBSCRIBE>"
-    message.set_content("View this TenderSignal alert in an HTML-capable email client.")
+    message.set_content("View this CivicBid alert in an HTML-capable email client.")
     message.add_alternative(html, subtype="html")
     port = int(os.getenv("TENDERSIGNAL_SMTP_PORT", "465"))
     with smtplib.SMTP_SSL(os.environ["TENDERSIGNAL_SMTP_HOST"], port, context=ssl.create_default_context()) as server:
@@ -242,8 +242,8 @@ def main() -> int:
         recipient = os.environ["TENDERSIGNAL_SMTP_FROM"]
         send_email(
             recipient,
-            "TenderSignal delivery test",
-            "<h2>TenderSignal is connected</h2><p>This is a manual delivery test. No customer notice was sent.</p>",
+            "CivicBid delivery test",
+            "<h2>CivicBid is connected</h2><p>This is a manual delivery test. No customer notice was sent.</p>",
         )
         print(f"Sent delivery test to {recipient}")
         return 0
@@ -272,19 +272,19 @@ def main() -> int:
                     continue
                 title = notice.get("tender", {}).get("title") or notice.get("title") or "Untitled procurement notice"
                 reason_text = ", ".join(reasons) or "profile match"
-                html = f"""<h2>TenderSignal: {escape(title)}</h2>
+                html = f"""<h2>CivicBid: {escape(title)}</h2>
 <p><strong>Match score:</strong> {relevance}/10 &middot; {escape(reason_text)}</p>
 <p>{escape(notice.get('tender', {}).get('description', '')[:1200])}</p>
 <p><a href=\"{escape(source_link(notice), quote=True)}\">Open the official notice</a></p>
 <p><small>You received this because your company profile is active. To stop alerts, reply with the word UNSUBSCRIBE.</small></p>"""
-                send_email(subscriber["email"], f"TenderSignal match ({relevance}/10): {title}", html)
+                send_email(subscriber["email"], f"CivicBid match ({relevance}/10): {title}", html)
                 mark_sent(connection, subscriber["id"], notice_id)
                 total_sent += 1
                 print(f"Sent {notice_id} to {subscriber['email']}")
             if digest_candidates and not digest_sent_today(connection, subscriber["id"]):
                 send_email(
                     subscriber["email"],
-                    f"TenderSignal daily digest: {len(digest_candidates)} opportunities",
+                    f"CivicBid daily digest: {len(digest_candidates)} opportunities",
                     digest_html(digest_candidates),
                 )
                 for notice, _, _ in digest_candidates:

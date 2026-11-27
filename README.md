@@ -1,6 +1,6 @@
-# TenderSignal UK
+# CivicBid UK
 
-TenderSignal UK is a B2B tender-intelligence service. It monitors public procurement notices, scores opportunities against client profiles, and can email either high-relevance alerts or a daily all-category digest.
+CivicBid UK is a B2B tender-intelligence service. It monitors public procurement notices, scores opportunities against client profiles, and can email either high-relevance alerts or a daily all-category digest.
 
 ## Why this is the 30-day bet
 
