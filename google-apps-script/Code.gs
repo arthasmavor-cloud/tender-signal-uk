@@ -61,6 +61,10 @@ function doGet(event) {
 
 /** Called by the public web form. It returns a Razorpay checkout URL only after saving the request. */
 function submitApplication(form) {
+  // Silent honeypot: normal visitors never see or fill this field.
+  if (String((form || {}).companyUrl || '').trim()) {
+    return { ok: true, paymentReady: false, message: 'Your request has been saved.' };
+  }
   const application = validateApplication_(form || {});
   const lock = LockService.getScriptLock();
   lock.waitLock(20 * 1000);
