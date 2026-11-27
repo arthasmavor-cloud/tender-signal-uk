@@ -4,6 +4,9 @@ on:
   schedule:
     # Daily founder-plan digest. GitHub Actions schedules are UTC.
     - cron: "15 8 * * *"
+    # Fallback if the primary scheduled run is delayed or skipped. The worker's
+    # daily digest table prevents a second digest on the same UTC day.
+    - cron: "15 13 * * *"
   workflow_dispatch:
     inputs:
       smoke_test:
